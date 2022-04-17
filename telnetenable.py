@@ -37,11 +37,11 @@ TELNET_PORT = 23
 # This helper does the byteswapping on the string buffer
 def ByteSwap(data):
   a = array.array('i')
-  if(a.itemsize < 4):
+  if a.itemsize < 4:
     a = array.array('L')
   
-  if(a.itemsize != 4):
-    print "Need a type that is 4 bytes on your platform so we can fix the data!"
+  if a.itemsize != 4:
+    print("Need a type that is 4 bytes on your platform so we can fix the data!")
     exit(1)
 
   a.fromstring(data)
@@ -62,14 +62,14 @@ def GeneratePayload(mac, username, password=""):
   assert(len(password) <= 0x21)
   just_password = password.ljust(0x21, "\x00")
 
-  cleartext = (just_mac + just_username + just_password).ljust(0x70, '\x00')
-  md5_key = MD5.new(cleartext).digest()
+  cleartext = (just_mac + just_username + just_password).ljust(0x70, "\x00")
+  md5_key = MD5.new(cleartext.encode("utf8")).digest()
 
-  payload = ByteSwap((md5_key + cleartext).ljust(0x80, "\x00"))
+  payload = ByteSwap((md5_key + cleartext.encode("utf8")).ljust(0x80, "\x00".encode("utf8")))
   
   secret_key = "AMBIT_TELNET_ENABLE+" + password
 
-  return ByteSwap(Blowfish.new(secret_key, 1).encrypt(payload))
+  return ByteSwap(Blowfish.new(secret_key.encode("utf8"), 1).encrypt(payload))
 
 
 def SendPayload(ip, payload):
@@ -77,29 +77,29 @@ def SendPayload(ip, payload):
     af, socktype, proto, canonname, sa = res
     try:
       s = socket.socket(af, socktype, proto)
-    except socket.error, msg:
+    except socket.error as msg:
       s = None
       continue
 
     try:
       s.connect(sa)
-    except socket.error, msg:
+    except socket.error as msg:
       s.close()
       s= None
       continue
     break
 
   if s is None:
-    print "Could not connect to '%s:%d'" % (ip, TELNET_PORT)
+    print("Could not connect to '%s:%d'" % (ip, TELNET_PORT))
   else:
     s.send(payload)
     s.close()
-    print "Sent telnet enable payload to '%s:%d'" % (ip, TELNET_PORT)
+    print("Sent telnet enable payload to '%s:%d'" % (ip, TELNET_PORT))
   
 def main():
   args = sys.argv[1:]
   if len(args) < 3 or len(args) > 4:
-    print "usage: python telnetenable.py <ip> <mac> <username> [<password>]"
+    print("usage: python telnetenable.py <ip> <mac> <username> [<password>]")
 
   ip = args[0]
   mac = args[1]
